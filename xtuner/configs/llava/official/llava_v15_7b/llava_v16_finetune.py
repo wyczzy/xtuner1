@@ -1,25 +1,27 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import torch
 from mmengine.hooks import (CheckpointHook, DistSamplerSeedHook, IterTimerHook,
                             LoggerHook, ParamSchedulerHook)
 from mmengine.optim import AmpOptimWrapper, CosineAnnealingLR, LinearLR
 from peft import LoraConfig
 from torch.optim import AdamW
 from transformers import (AutoModelForCausalLM, AutoTokenizer,
-                          CLIPImageProcessor, CLIPVisionModel)
+                          BitsAndBytesConfig, CLIPImageProcessor,
+                          CLIPVisionModel)
 
-from xtuner.dataset import LLaVADataset
-from xtuner.dataset.collate_fns import default_collate_fn
+from xtuner.dataset import AnyShapeLLaVADataset
+from xtuner.dataset.collate_fns import anyshape_llava_collate_fn
 from xtuner.dataset.map_fns import llava_map_fn, template_map_fn_factory
 from xtuner.dataset.samplers import LengthGroupedSampler
-from xtuner.engine.hooks import DatasetInfoHook, EvaluateChatHook
+from xtuner.engine.hooks import AnyShapeEvaluateChatHook, DatasetInfoHook
 from xtuner.engine.runner import TrainLoop
-from xtuner.model import LLaVAModel
+from xtuner.model import AnyShapeLLaVAModel
 from xtuner.utils import PROMPT_TEMPLATE
 
 #######################################################################
 #                          PART 1  Settings                           #
 #######################################################################
-# llm_name_or_path = '/data/kesun/LLaVA-v1.5-7b-1'
+# Model
 llm_name_or_path = '/data/kesun/vicuna-7b-v1.5'
 # visual_encoder_name_or_path = 'openai/clip-vit-large-patch14-336'
 visual_encoder_name_or_path = '/data/kesun/zzy_weights/aigcllmdetectvisual/image_visual'
@@ -27,39 +29,31 @@ visual_encoder_name_or_path = '/data/kesun/zzy_weights/aigcllmdetectvisual/image
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all/iter_6550_xtuner/visual_encoder/pytorch_model.bin'
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all'
 pretrained_pth = '/home/kesun/zzy/xtuner/epoch_1.pth'
-# pretrained_pth = '/data/kesun/work_dirs/llava_v15_7b_finetune_AIGC_4_cls_pretrain_1029/iter_500.pth'
-# pretrained_pth = '/data/kesun/work_dirs/llava_v15_7b_finetune_AIGC_4_cls_sd_1030/iter_500.pth'
 
 # Data
-# "_name_or_path": "openai/clip-vit-large-patch14-336",
-# data_root = '/home/kesun/zzy/LLaVA/playground/data/'
-# data_path = data_root + 'LLaVA-Pretrain/ffpp0608_wotest.json'
-# image_folder = "/data/kesun/kesun/Dataset/Dataset/Deepfake/ffpp"
-data_root = "/home/kesun/kesun/kesun/FFAA/data/"
-# data_path = data_root + 'LLaVA-Pretrain/ffpp0608_wotest.json'
-# data_path = data_root + 'aigcdetect_progan_all_4cls.json'
-data_path = data_root + 'aigcdetect_progan_all_4cls_finetune.json'
-# data_path = data_root + 'aigcdetect_progan_debug.json'
-image_folder = "/data/kesun/kesun/aigcdatasets/progan_train/"
-# image_folder = "/data/kesun/kesun/"
+# data_root = './data/llava_data/'
+data_path = "/home/kesun/kesun/kesun/FFAA/data1/aigcdetect_progan_id_debug.json"
+image_folder = "/data/kesun/kesun"
 prompt_template = PROMPT_TEMPLATE.vicuna
-max_length = int(4096 - (336 / 14)**2)
+image_grid_pinpoints = [[336, 672], [672, 336], [672, 672], [1008, 336],
+                        [336, 1008]]
+max_length = 2048
 
 # Scheduler & Optimizer
-batch_size = 32  # per_device
+batch_size =32  # per_device
 accumulative_counts = 1
 dataloader_num_workers = 4
-max_epochs = 1
+max_epochs = 5
 optim_type = AdamW
-lr = 2e-4
+lr = 4e-5
 betas = (0.9, 0.999)
 weight_decay = 0
 max_norm = 1  # grad clip
 warmup_ratio = 0.03
 
 # Save
-save_steps = 500
-save_total_limit = 2  # Maximum checkpoints to keep (-1 means unlimited)
+save_steps = 50
+save_total_limit = 20  # Maximum checkpoints to keep (-1 means unlimited)
 
 # Evaluate the generation performance during the training
 evaluation_freq = 500
@@ -144,10 +138,12 @@ image_processor = dict(
     trust_remote_code=True)
 
 model = dict(
-    type=LLaVAModel,
+    type=AnyShapeLLaVAModel,
     freeze_llm=True,
     freeze_visual_encoder=True,
     pretrained_pth=pretrained_pth,
+    image_grid_pinpoints=image_grid_pinpoints,
+    max_length=max_length,
     llm=dict(
         type=AutoModelForCausalLM.from_pretrained,
         pretrained_model_name_or_path=llm_name_or_path,
@@ -161,16 +157,13 @@ model = dict(
         task_type='CAUSAL_LM'),
     visual_encoder=dict(
         type=CLIPVisionModel.from_pretrained,
-        pretrained_model_name_or_path=visual_encoder_name_or_path),
-    # visual_encoder_lora = dict(
-    #     type=LoraConfig, r=64, lora_alpha=128, lora_dropout=0.05, bias='none')
-)
+        pretrained_model_name_or_path=visual_encoder_name_or_path))
 
 #######################################################################
 #                      PART 3  Dataset & Dataloader                   #
 #######################################################################
 llava_dataset = dict(
-    type=LLaVADataset,
+    type=AnyShapeLLaVADataset,
     data_path=data_path,
     image_folder=image_folder,
     tokenizer=tokenizer,
@@ -179,7 +172,8 @@ llava_dataset = dict(
     template_map_fn=dict(
         type=template_map_fn_factory, template=prompt_template),
     max_length=max_length,
-    pad_image_to_square=True)
+    pad_image_to_square=True,
+    image_grid_pinpoints=image_grid_pinpoints)
 
 train_dataloader = dict(
     batch_size=batch_size,
@@ -190,7 +184,7 @@ train_dataloader = dict(
         type=LengthGroupedSampler,
         length_property='modality_length',
         per_device_batch_size=batch_size * accumulative_counts),
-    collate_fn=dict(type=default_collate_fn))
+    collate_fn=dict(type=anyshape_llava_collate_fn))
 
 #######################################################################
 #                    PART 4  Scheduler & Optimizer                    #
@@ -234,7 +228,8 @@ train_cfg = dict(type=TrainLoop, max_epochs=max_epochs)
 custom_hooks = [
     dict(type=DatasetInfoHook, tokenizer=tokenizer),
     dict(
-        type=EvaluateChatHook,
+        type=AnyShapeEvaluateChatHook,
+        image_grid_pinpoints=image_grid_pinpoints,
         tokenizer=tokenizer,
         image_processor=image_processor,
         every_n_iters=evaluation_freq,
