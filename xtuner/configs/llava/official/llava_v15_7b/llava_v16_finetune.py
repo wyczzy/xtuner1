@@ -52,7 +52,7 @@ max_norm = 1  # grad clip
 warmup_ratio = 0.03
 
 # Save
-save_steps = 50
+save_steps = 10
 save_total_limit = 20  # Maximum checkpoints to keep (-1 means unlimited)
 
 # Evaluate the generation performance during the training

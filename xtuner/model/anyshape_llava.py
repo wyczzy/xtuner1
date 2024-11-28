@@ -51,7 +51,7 @@ class AnyShapeLLaVAModel(LLaVAModel):
         # Step 4. Image Newline
         to_return.update(
             {k: v
-             for k, v in state_dict.items() if 'image_newline.' in k})
+             for k, v in state_dict.items() if 'image_newline' in k})
         return to_return
 
     def preprocess_for_pixel_values(self, data, data_samples=None):

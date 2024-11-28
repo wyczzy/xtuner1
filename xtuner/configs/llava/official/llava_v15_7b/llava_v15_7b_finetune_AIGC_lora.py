@@ -35,23 +35,23 @@ pretrained_pth = '/home/kesun/zzy/xtuner/epoch_1.pth'
 # data_root = '/home/kesun/zzy/LLaVA/playground/data/'
 # data_path = data_root + 'LLaVA-Pretrain/ffpp0608_wotest.json'
 # image_folder = "/data/kesun/kesun/Dataset/Dataset/Deepfake/ffpp"
-data_root = "/home/kesun/kesun/kesun/FFAA/data/"
+data_root = "/home/kesun/kesun/kesun/FFAA/data1/"
 # data_path = data_root + 'LLaVA-Pretrain/ffpp0608_wotest.json'
 # data_path = data_root + 'aigcdetect_progan_all_4cls.json'
-data_path = data_root + 'aigcdetect_progan_all_4cls_finetune.json'
+data_path = data_root + 'aigcdetect_progan_id.json'
 # data_path = data_root + 'aigcdetect_progan_debug.json'
-image_folder = "/data/kesun/kesun/aigcdatasets/progan_train/"
-# image_folder = "/data/kesun/kesun/"
+# image_folder = "/data/kesun/kesun/aigcdatasets/progan_train/"
+image_folder = "/data/kesun/kesun/"
 prompt_template = PROMPT_TEMPLATE.vicuna
-max_length = int(4096 - (336 / 14)**2)
+max_length = int(2048 - (336 / 14)**2)
 
 # Scheduler & Optimizer
 batch_size = 32  # per_device
 accumulative_counts = 1
 dataloader_num_workers = 4
-max_epochs = 1
+max_epochs = 5
 optim_type = AdamW
-lr = 2e-4
+lr = 4e-5
 betas = (0.9, 0.999)
 weight_decay = 0
 max_norm = 1  # grad clip
@@ -59,7 +59,7 @@ warmup_ratio = 0.03
 
 # Save
 save_steps = 500
-save_total_limit = 2  # Maximum checkpoints to keep (-1 means unlimited)
+save_total_limit = 22  # Maximum checkpoints to keep (-1 means unlimited)
 
 # Evaluate the generation performance during the training
 evaluation_freq = 500
@@ -154,8 +154,8 @@ model = dict(
         trust_remote_code=True),
     llm_lora=dict(
         type=LoraConfig,
-        r=64,
-        lora_alpha=128,
+        r=128,
+        lora_alpha=256,
         lora_dropout=0.05,
         bias='none',
         task_type='CAUSAL_LM'),
