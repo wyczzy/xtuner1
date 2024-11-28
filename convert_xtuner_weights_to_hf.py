@@ -37,7 +37,7 @@ def convert_state_dict_to_hf(state_dict, mapping):
     return new_state_dict
 
 
-def convert_to_hf(text_model_id, vision_model_id, projector_weight, save_path):
+def convert_to_hf(text_model_id, vision_model_id, projector_weight, image_newline_weight, save_path):
     torch.set_default_dtype(torch.float16)
     text_config = AutoConfig.from_pretrained(
         text_model_id, trust_remote_code=True)
@@ -91,7 +91,8 @@ def convert_to_hf(text_model_id, vision_model_id, projector_weight, save_path):
     vit_state_dict = convert_state_dict_to_hf(vit_state_dict,
                                               KEYS_TO_MODIFY_MAPPING_VIT)
     state_dict = {**projector_state_dict, **llm_state_dict, **vit_state_dict}
-    state_dict["image_newline"] = model.state_dict()["image_newline"]
+    image_newline_weight = torch.load(image_newline_weight)
+    state_dict["image_newline"] = image_newline_weight
     model.load_state_dict(state_dict, strict=True, assign=True)
 
     pre_expansion_embeddings = \
@@ -141,10 +142,11 @@ def main():
     parser.add_argument('--text_model_id')
     parser.add_argument('--vision_model_id')
     parser.add_argument('--projector_weight')
+    parser.add_argument('--image_newline_weight')
     parser.add_argument('--save_path')
     args = parser.parse_args()
     convert_to_hf(args.text_model_id, args.vision_model_id,
-                  args.projector_weight, args.save_path)
+                  args.projector_weight, args.image_newline_weight, args.save_path)
 
 
 if __name__ == '__main__':

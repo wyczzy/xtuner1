@@ -399,6 +399,9 @@ class LLaVAModel(BaseModel):
         self.projector.save_pretrained(projector_path,
                                        **save_pretrained_kwargs)
 
+        if getattr(self, "image_newline", None) is not None:
+            torch.save(self.image_newline, osp.join(save_dir, "image_newline.pth"))
+
     def to_huggingface_llava(self,
                              cfg,
                              save_dir,
