@@ -9,8 +9,9 @@ from .evaluate_chat_hook import EvaluateChatHook
 
 class AnyShapeEvaluateChatHook(EvaluateChatHook):
 
-    def __init__(self, image_grid_pinpoints, *args, **kwargs):
+    def __init__(self, image_grid_pinpoints, mode, *args, **kwargs):
         self.image_grid_pinpoints = image_grid_pinpoints
+        self.mode = mode
         super().__init__(*args, **kwargs)
 
     def _eval_images(self,
@@ -28,7 +29,7 @@ class AnyShapeEvaluateChatHook(EvaluateChatHook):
             orig_size = sample_image.size
             # n,c,h,w
             image = process_anyres_image(sample_image, self.image_processor,
-                                         self.image_grid_pinpoints)
+                                         self.image_grid_pinpoints, self.mode)
 
             image = image.to(device)
             sample_input = DEFAULT_IMAGE_TOKEN + '\n' + sample_input

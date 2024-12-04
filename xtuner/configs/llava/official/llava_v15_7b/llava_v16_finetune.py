@@ -23,16 +23,23 @@ from xtuner.utils import PROMPT_TEMPLATE
 #######################################################################
 # Model
 llm_name_or_path = '/data/kesun/vicuna-7b-v1.5'
+# # visual_encoder_name_or_path = 'openai/clip-vit-large-patch14-336'
+# visual_encoder_name_or_path = '/data/kesun/zzy_weights/aigcllmdetectvisual/image_visual'
+# # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all/iter_6550_xtuner/visual_encoder'
+# # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all/iter_6550_xtuner/visual_encoder/pytorch_model.bin'
+# # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all'
+pretrained_pth = '/home/kesun/zzy/xtuner/epoch_1.pth'
+# llm_name_or_path = '/data/kesun/kesun/work_dirs/lllava_v15_7b_best/iter_14000_merged'
 # visual_encoder_name_or_path = 'openai/clip-vit-large-patch14-336'
 visual_encoder_name_or_path = '/data/kesun/zzy_weights/aigcllmdetectvisual/image_visual'
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all/iter_6550_xtuner/visual_encoder'
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all/iter_6550_xtuner/visual_encoder/pytorch_model.bin'
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all'
-pretrained_pth = '/home/kesun/zzy/xtuner/epoch_1.pth'
-
+# pretrained_pth = "/home/kesun/zzy/xtuner/work_dirs1/iter_14000_xtuner/epoch_best.pth"
 # Data
 # data_root = './data/llava_data/'
 data_path = "/home/kesun/kesun/kesun/FFAA/data1/aigcdetect_progan_id_debug.json"
+# data_path = "/home/kesun/kesun/kesun/FFAA/data1/aigcdetect_progan_id.json"
 image_folder = "/data/kesun/kesun"
 prompt_template = PROMPT_TEMPLATE.vicuna
 image_grid_pinpoints = [[336, 672], [672, 336], [672, 672], [1008, 336],
@@ -40,9 +47,10 @@ image_grid_pinpoints = [[336, 672], [672, 336], [672, 672], [1008, 336],
 max_length = 2048
 
 # Scheduler & Optimizer
-batch_size =32  # per_device
+batch_size = 4  # per_device
 accumulative_counts = 1
-dataloader_num_workers = 4
+dataloader_num_workers = 0
+# dataloader_num_workers = 4
 max_epochs = 5
 optim_type = AdamW
 lr = 4e-5
@@ -52,7 +60,7 @@ max_norm = 1  # grad clip
 warmup_ratio = 0.03
 
 # Save
-save_steps = 10
+save_steps = 500
 save_total_limit = 20  # Maximum checkpoints to keep (-1 means unlimited)
 
 # Evaluate the generation performance during the training
@@ -150,8 +158,8 @@ model = dict(
         trust_remote_code=True),
     llm_lora=dict(
         type=LoraConfig,
-        r=64,
-        lora_alpha=128,
+        r=128,
+        lora_alpha=256,
         lora_dropout=0.05,
         bias='none',
         task_type='CAUSAL_LM'),
@@ -230,6 +238,7 @@ custom_hooks = [
     dict(
         type=AnyShapeEvaluateChatHook,
         image_grid_pinpoints=image_grid_pinpoints,
+        mode="eval",
         tokenizer=tokenizer,
         image_processor=image_processor,
         every_n_iters=evaluation_freq,

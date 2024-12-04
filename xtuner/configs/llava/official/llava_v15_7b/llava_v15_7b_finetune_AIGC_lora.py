@@ -14,6 +14,8 @@ from xtuner.dataset.samplers import LengthGroupedSampler
 from xtuner.engine.hooks import DatasetInfoHook, EvaluateChatHook
 from xtuner.engine.runner import TrainLoop
 from xtuner.model import LLaVAModel
+from xtuner.model.modeling_llama import CustomLlamaForCausalLM
+
 from xtuner.utils import PROMPT_TEMPLATE
 
 #######################################################################
@@ -28,7 +30,7 @@ visual_encoder_name_or_path = '/data/kesun/zzy_weights/aigcllmdetectvisual/image
 # visual_encoder_name_or_path = '/home/kesun/zzy/xtuner/work_dirs/llava_v15_7b_finetune_all'
 pretrained_pth = '/home/kesun/zzy/xtuner/epoch_1.pth'
 # pretrained_pth = '/data/kesun/work_dirs/llava_v15_7b_finetune_AIGC_4_cls_pretrain_1029/iter_500.pth'
-# pretrained_pth = '/data/kesun/work_dirs/llava_v15_7b_finetune_AIGC_4_cls_sd_1030/iter_500.pth'
+# pretrained_pth = '/data/kesun/work_dirs/ll  ava_v15_7b_finetune_AIGC_4_cls_sd_1030/iter_500.pth'
 
 # Data
 # "_name_or_path": "openai/clip-vit-large-patch14-336",
@@ -43,7 +45,7 @@ data_path = data_root + 'aigcdetect_progan_id.json'
 # image_folder = "/data/kesun/kesun/aigcdatasets/progan_train/"
 image_folder = "/data/kesun/kesun/"
 prompt_template = PROMPT_TEMPLATE.vicuna
-max_length = int(2048 - (336 / 14)**2)
+max_length = int(4096 - (336 / 14)**2)
 
 # Scheduler & Optimizer
 batch_size = 32  # per_device
@@ -149,7 +151,8 @@ model = dict(
     freeze_visual_encoder=True,
     pretrained_pth=pretrained_pth,
     llm=dict(
-        type=AutoModelForCausalLM.from_pretrained,
+        # type=AutoModelForCausalLM.from_pretrained,
+        type=CustomLlamaForCausalLM.from_pretrained,
         pretrained_model_name_or_path=llm_name_or_path,
         trust_remote_code=True),
     llm_lora=dict(

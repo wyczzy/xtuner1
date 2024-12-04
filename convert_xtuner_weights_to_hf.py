@@ -37,7 +37,7 @@ def convert_state_dict_to_hf(state_dict, mapping):
     return new_state_dict
 
 
-def convert_to_hf(text_model_id, vision_model_id, projector_weight, image_newline_weight, save_path):
+def convert_to_hf(text_model_id, vision_model_id, projector_weight, image_newline_weight, save_path, image_grid_pinpoint):
     torch.set_default_dtype(torch.float16)
     text_config = AutoConfig.from_pretrained(
         text_model_id, trust_remote_code=True)
@@ -52,6 +52,8 @@ def convert_to_hf(text_model_id, vision_model_id, projector_weight, image_newlin
     tokenizer.add_special_tokens({'pad_token': '<pad>'})
 
     image_processor = LlavaNextImageProcessor.from_pretrained(vision_model_id)
+
+    image_processor.image_grid_pinpoint = image_grid_pinpoint
 
     processor = LlavaNextProcessor(
         tokenizer=tokenizer, image_processor=image_processor)
@@ -146,7 +148,7 @@ def main():
     parser.add_argument('--save_path')
     args = parser.parse_args()
     convert_to_hf(args.text_model_id, args.vision_model_id,
-                  args.projector_weight, args.image_newline_weight, args.save_path)
+                  args.projector_weight, args.image_newline_weight, args.save_path, image_grid_pinpoint)
 
 
 if __name__ == '__main__':

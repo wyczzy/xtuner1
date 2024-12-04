@@ -24,7 +24,8 @@ from xtuner.model.utils import LoadWoInit, find_all_linear_names, traverse_dict
 from xtuner.registry import BUILDER, MAP_FUNC
 from xtuner.tools.utils import (auto_dtype_of_deepspeed_config,
                                 get_seed_from_checkpoint)
-
+import os
+os.environ["all_proxy"] = "http://127.0.0.1:47890"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train LLM')

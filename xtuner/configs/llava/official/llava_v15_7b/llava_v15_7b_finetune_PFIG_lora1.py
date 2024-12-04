@@ -14,6 +14,7 @@ from xtuner.dataset.samplers import LengthGroupedSampler
 from xtuner.engine.hooks import DatasetInfoHook, EvaluateChatHook
 from xtuner.engine.runner import TrainLoop
 from xtuner.model import LLaVAModel
+from xtuner.model.modeling_llama import CustomLlamaForCausalLM
 from xtuner.utils import PROMPT_TEMPLATE
 
 #######################################################################
@@ -46,9 +47,9 @@ prompt_template = PROMPT_TEMPLATE.vicuna
 max_length = int(2048 - (336 / 14)**2)
 
 # Scheduler & Optimizer
-batch_size = 32  # per_device
+batch_size = 4  # per_device
 accumulative_counts = 1
-dataloader_num_workers = 1
+dataloader_num_workers = 0
 max_epochs = 5
 optim_type = AdamW
 lr = 2e-5
@@ -88,7 +89,8 @@ model = dict(
     freeze_visual_encoder=True,
     pretrained_pth=pretrained_pth,
     llm=dict(
-        type=AutoModelForCausalLM.from_pretrained,
+        # type=AutoModelForCausalLM.from_pretrained,
+        type=CustomLlamaForCausalLM.from_pretrained,
         pretrained_model_name_or_path=llm_name_or_path,
         trust_remote_code=True),
     llm_lora=dict(

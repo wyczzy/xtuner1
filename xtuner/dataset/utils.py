@@ -2,6 +2,8 @@
 import base64
 import copy
 import io
+import random
+
 import math
 from io import BytesIO
 from itertools import chain
@@ -367,7 +369,7 @@ def divide_to_patches(image, patch_size):
     return patches
 
 
-def process_anyres_image(image, processor, possible_resolutions):
+def process_anyres_image(image, processor, possible_resolutions, mode="train"):
     """Process an image with variable resolutions.
 
     Args:
@@ -379,7 +381,10 @@ def process_anyres_image(image, processor, possible_resolutions):
     Returns:
         torch.Tensor: A tensor containing the processed image patches.
     """
-    best_resolution = select_best_resolution(image.size, possible_resolutions)
+    if mode == "train":
+        best_resolution = tuple(random.choice(possible_resolutions))
+    elif mode == "eval":
+        best_resolution = select_best_resolution(image.size, possible_resolutions)
     image_padded = resize_and_pad_image(image, best_resolution)
 
     patches = divide_to_patches(image_padded, processor.crop_size['height'])
